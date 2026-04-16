@@ -1,0 +1,130 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html {
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-black text-white antialiased;
+  }
+
+  *:focus-visible {
+    outline: 2px solid rgba(16, 185, 129, 0.65);
+    outline-offset: 2px;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+@keyframes moveBackground {
+  from {
+    background-position: 0% 0%;
+  }
+  to {
+    background-position: 0% -1000%;
+  }
+}
+
+@keyframes ambientFloatOne {
+  0% { transform: translate3d(-5%, -3%, 0) scale(1); }
+  50% { transform: translate3d(7%, 4%, 0) scale(1.06); }
+  100% { transform: translate3d(-5%, -3%, 0) scale(1); }
+}
+
+@keyframes ambientFloatTwo {
+  0% { transform: translate3d(6%, 4%, 0) scale(1); }
+  50% { transform: translate3d(-7%, -3%, 0) scale(1.05); }
+  100% { transform: translate3d(6%, 4%, 0) scale(1); }
+}
+
+/* GPU Acceleration for Smooth Animations */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body, html {
+  scroll-behavior: smooth;
+}
+
+button, input, textarea {
+  transition: background-color 220ms ease, border-color 220ms ease, color 220ms ease, box-shadow 220ms ease, transform 220ms ease;
+}
+
+/* Smooth transitions */
+.will-change-motion {
+  will-change: transform, opacity;
+}
+
+/* Motion optimizations */
+.motion-safe {
+  @media (prefers-reduced-motion: no-preference) {
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+.landing-ambient-orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(72px);
+  opacity: 0.22;
+  will-change: transform;
+}
+
+.landing-ambient-orb--emerald {
+  width: min(46vw, 560px);
+  height: min(46vw, 560px);
+  top: -12%;
+  left: -8%;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.32) 0%, rgba(16, 185, 129, 0) 70%);
+  animation: ambientFloatOne 18s ease-in-out infinite;
+}
+
+.landing-ambient-orb--cyan {
+  width: min(42vw, 520px);
+  height: min(42vw, 520px);
+  right: -10%;
+  bottom: -14%;
+  background: radial-gradient(circle, rgba(6, 182, 212, 0.24) 0%, rgba(6, 182, 212, 0) 72%);
+  animation: ambientFloatTwo 22s ease-in-out infinite;
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .landing-ambient-orb {
+    animation: none !important;
+  }
+}
