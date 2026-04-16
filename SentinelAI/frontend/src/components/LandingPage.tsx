@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Upload, Link as LinkIcon, ArrowRight, FileVideo, FileImage, Mail, MessageSquare, Send, ShieldAlert, ShieldCheck, Activity } from 'lucide-react';
+import { Upload, Link as LinkIcon, ArrowRight, FileVideo, FileImage, Mail, MessageSquare, Send, ShieldAlert, ShieldCheck, Activity, LogIn } from 'lucide-react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useStore } from '../store/useStore';
 import { apiService } from '../services/apiService';
@@ -22,7 +22,7 @@ export default function LandingPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { publicKey } = useWallet();
-  const { setLoading, setResult, setTextResult, setError, isLoading, loadingMessage, textResult, reset } = useStore();
+  const { setLoading, setResult, setTextResult, setError, isLoading, loadingMessage, textResult, reset, setCurrentPage, user: storeUser } = useStore();
 
   const handleFileUpload = async (file: File) => {
     try {
@@ -146,11 +146,25 @@ export default function LandingPage() {
             </div>
           </motion.div>
 
-          <div className="flex flex-col items-center gap-4 relative z-20">
+          <div className="flex flex-col items-center gap-6 relative z-20">
             <p className="text-base md:text-lg text-white/45 max-w-2xl mx-auto font-light tracking-wide leading-relaxed">
               Advanced neural forensics for real-time deepfake detection and semantic news verification.
               Protecting truth in the age of synthetic media.
             </p>
+
+            {!storeUser && (
+              <motion.button 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.8 }}
+                onClick={() => setCurrentPage('auth')}
+                className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 hover:text-white transition-all group active:scale-95"
+              >
+                <LogIn size={16} />
+                <span className="text-[10px] uppercase tracking-widest font-medium">Developer Portal</span>
+                <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+              </motion.button>
+            )}
           </div>
         </div>
 

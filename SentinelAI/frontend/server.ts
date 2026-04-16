@@ -53,8 +53,10 @@ async function startServer() {
       const result = await db.run("INSERT INTO users (email, password) VALUES (?, ?)", [email, hashedPassword]);
       const token = jwt.sign({ userId: result.lastID, email }, JWT_SECRET, { expiresIn: '7d' });
       res.json({ token, user: { id: result.lastID, email } });
-    } catch (error) {
-      res.status(400).json({ error: "User already exists or invalid data" });
+    } catch (error: any) {
+      console.error("Registration Error:", error);
+      const message = error.code === 'SQLITE_CONSTRAINT' ? "Email already registered" : "Internal server error";
+      res.status(400).json({ error: message, detail: error.message });
     }
   });
 

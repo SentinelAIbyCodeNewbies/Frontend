@@ -134,7 +134,7 @@ export default function AuthPage() {
             </AnimatePresence>
 
             <GlassButton
-              onClick={() => {}}
+              onClick={() => handleSubmit({ preventDefault: () => {} } as any)}
               className="w-full bg-emerald-500 hover:bg-emerald-400 py-4 mt-2"
               disabled={isLoading}
             >
