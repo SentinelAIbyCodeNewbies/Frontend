@@ -1,7 +1,7 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, type DragEvent, type FormEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Upload, Link as LinkIcon, ArrowRight, FileVideo, FileImage, Mail, MessageSquare, Send, ShieldAlert, ShieldCheck, Activity, LogIn } from 'lucide-react';
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { useStore } from '../store/useStore';
 import { apiService } from '../services/apiService';
 import { calculateFileHash } from '../lib/crypto';
@@ -21,24 +21,20 @@ export default function LandingPage() {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { publicKey } = useWallet();
+  const { publicKey, sendTransaction } = useWallet();
+  const { connection } = useConnection();
   const { setLoading, setResult, setTextResult, setError, isLoading, loadingMessage, textResult, reset, setCurrentPage, user: storeUser } = useStore();
 
   const handleFileUpload = async (file: File) => {
     try {
-      if (!publicKey) {
-        setError('Please connect your Solana wallet before uploading.');
-        return;
-      }
-
       setUploadStatus('fingerprinting');
       setLoading(true, 'Generating secure fingerprint...');
       const fileHash = await calculateFileHash(file);
       console.log('Fingerprint generated:', fileHash);
 
       setUploadStatus('uploading');
-      setLoading(true, 'Uploading file...');
-      const walletAddress = publicKey.toBase58();
+      setLoading(true, 'Uploading file and anchoring integrity proof...');
+      const walletAddress = publicKey?.toBase58();
       const res = await apiService.analyzeFile(file, fileHash, walletAddress);
 
       setLoading(true, 'Running deepfake analysis...');
@@ -51,7 +47,7 @@ export default function LandingPage() {
     }
   };
 
-  const handleUrlSubmit = async (e: React.FormEvent) => {
+  const handleUrlSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!url) return;
     try {
@@ -65,7 +61,7 @@ export default function LandingPage() {
     }
   };
 
-  const handleTextSubmit = async (e?: React.FormEvent) => {
+  const handleTextSubmit = async (e?: FormEvent) => {
     if (e) e.preventDefault();
     if (!text.trim()) return;
     try {
@@ -79,7 +75,7 @@ export default function LandingPage() {
     }
   };
 
-  const onDragOver = (e: React.DragEvent) => {
+  const onDragOver = (e: DragEvent) => {
     e.preventDefault();
     setIsDragging(true);
   };
@@ -88,7 +84,7 @@ export default function LandingPage() {
     setIsDragging(false);
   };
 
-  const onDrop = (e: React.DragEvent) => {
+  const onDrop = (e: DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
     const file = e.dataTransfer.files[0];

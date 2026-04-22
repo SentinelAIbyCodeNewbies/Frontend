@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Mail, Lock, ArrowRight, Eye, EyeOff, LogIn, UserPlus } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { GlassEffect, GlassButton } from './ui/liquid-glass';
 
 export default function AuthPage() {
-  const { setUser, setCurrentPage, setError } = useStore();
+  const { setUser, setCurrentPage } = useStore();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -13,22 +13,48 @@ export default function AuthPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [localError, setLocalError] = useState('');
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLocalError('');
     setIsLoading(true);
 
-    const endpoint = mode === 'login' ? '/api/auth/login' : '/api/auth/register';
-
     try {
-      const res = await fetch(endpoint, {
+      const baseUrl = import.meta.env.VITE_API_URL || '/api';
+      if (mode === 'register') {
+        const registerRes = await fetch(`${baseUrl}/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
+        const registerData = await registerRes.json();
+        if (!registerRes.ok) {
+          throw new Error(registerData.detail || 'Registration failed');
+        }
+      }
+
+      const loginRes = await fetch(`${baseUrl}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Authentication failed');
-      setUser({ email: data.user.email }, data.token);
+      const loginData = await loginRes.json();
+      if (!loginRes.ok) {
+        throw new Error(loginData.detail || 'Authentication failed');
+      }
+
+      const token = typeof loginData.access_token === 'string' ? loginData.access_token : null;
+      const apiKey =
+        typeof loginData.api_key === 'string'
+          ? loginData.api_key
+          : typeof loginData.api_key?.key === 'string'
+            ? loginData.api_key.key
+            : null;
+
+      if (!token) {
+        throw new Error('Backend login succeeded but no access token was returned.');
+      }
+
+      setUser({ email }, token, apiKey);
       setCurrentPage('api-dashboard');
     } catch (err) {
       setLocalError(err instanceof Error ? err.message : 'Authentication failed');

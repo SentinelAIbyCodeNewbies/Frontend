@@ -26,7 +26,39 @@ export interface AnalysisResult {
   metadataRiskLevel?: string;
   metadataFlags?: string[];
   suspiciousFrameDetails?: Array<{ timestampSec: number; score: number }>;
+  blockchainTx?: string;
   raw?: unknown;
+}
+
+export interface PaymentVerificationResult {
+  success: boolean;
+  status?: string;
+  message?: string;
+}
+
+function getAuthHeaders(): Record<string, string> {
+  const token = localStorage.getItem('sentinel_token');
+  const apiKey = localStorage.getItem('sentinel_api_key');
+
+  return {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(apiKey ? { 'x-api-key': apiKey } : {}),
+  };
+}
+
+function inferMediaTypeFromUrl(url: string): 'image' | 'video' {
+  try {
+    const pathname = new URL(url).pathname.toLowerCase();
+    if (/\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(pathname)) {
+      return 'image';
+    }
+  } catch {
+    if (/\.(png|jpe?g|gif|webp|bmp|svg)(\?|#|$)/i.test(url.toLowerCase())) {
+      return 'image';
+    }
+  }
+
+  return 'video';
 }
 
 function normalizeAnalysisResult(raw: any): AnalysisResult {
@@ -34,13 +66,20 @@ function normalizeAnalysisResult(raw: any): AnalysisResult {
   const visual = raw?.visual_analysis ?? raw?.visualAnalysis ?? raw;
   const metadata = raw?.metadata_analysis ?? raw?.metadataAnalysis ?? undefined;
 
-  const verdict = (visual?.verdict ?? raw?.verdict) as AnalysisResult['verdict'] | undefined;
+  const verdict = (
+    visual?.verdict ??
+    visual?.result ??
+    raw?.verdict ??
+    raw?.result
+  ) as AnalysisResult['verdict'] | string | undefined;
   const confidence = visual?.confidence ?? raw?.confidence;
 
   const framesAnalyzed =
     visual?.frames_analyzed ??
+    visual?.frames_analysed ??
     visual?.framesAnalyzed ??
     raw?.frames_analyzed ??
+    raw?.frames_analysed ??
     raw?.framesAnalyzed;
 
   const suspiciousFrames =
@@ -64,7 +103,7 @@ function normalizeAnalysisResult(raw: any): AnalysisResult {
         .filter((d: any) => Number.isFinite(d.timestampSec) && Number.isFinite(d.score))
     : undefined;
 
-  const sourceUrl = (raw?.source_url ?? raw?.sourceUrl) as string | undefined;
+  const sourceUrl = (raw?.source_url ?? raw?.sourceUrl ?? raw?.original_url) as string | undefined;
 
   const timestamp =
     typeof raw?.timestamp === 'string' && raw.timestamp
@@ -72,7 +111,7 @@ function normalizeAnalysisResult(raw: any): AnalysisResult {
       : new Date().toISOString();
 
   return {
-    verdict: verdict === 'Fake' ? 'Fake' : 'Real',
+    verdict: typeof verdict === 'string' && verdict.toLowerCase() === 'fake' ? 'Fake' : 'Real',
     confidence: typeof confidence === 'number' ? confidence : Number(confidence ?? 0),
     framesAnalyzed: typeof framesAnalyzed === 'number' ? framesAnalyzed : Number(framesAnalyzed ?? 0),
     suspiciousFrames:
@@ -85,6 +124,12 @@ function normalizeAnalysisResult(raw: any): AnalysisResult {
     metadataRiskLevel: typeof metadata?.risk_level === 'string' ? metadata.risk_level : undefined,
     metadataFlags: Array.isArray(metadata?.flags) ? metadata.flags : undefined,
     suspiciousFrameDetails,
+    blockchainTx:
+      typeof raw?.blockchain_proof?.signature === 'string'
+        ? raw.blockchain_proof.signature
+        : typeof raw?.blockchainTx === 'string'
+          ? raw.blockchainTx
+          : undefined,
     raw,
   };
 }
@@ -93,16 +138,25 @@ export const apiService = {
   /**
    * Pathway A: Local Upload
    */
-  analyzeFile: async (file: File, fileHash: string, walletAddress?: string): Promise<AnalysisResult> => {
+  analyzeFile: async (file: File, fileHash: string, walletAddress?: string, blockchainTx?: string): Promise<AnalysisResult> => {
+    const authHeaders = getAuthHeaders();
+    if (!authHeaders.Authorization && !authHeaders['x-api-key']) {
+      throw new Error('Please sign in to your SentinelAI account before starting an analysis.');
+    }
+
     const formData = new FormData();
     formData.append('file', file);
+    if (blockchainTx) {
+      formData.append('blockchain_tx', blockchainTx);
+    }
 
-    const endpoint = file.type.startsWith('video/') ? '/analyze_video' : '/analyze_image';
+    const endpoint = '/analyse/analyse_upload';
 
     const response = await fetch(`${FASTAPI_URL}${endpoint}`, {
       method: 'POST',
       body: formData,
       headers: {
+        ...authHeaders,
         'X-File-Hash': fileHash,
         ...(walletAddress ? { 'X-Wallet-Address': walletAddress } : {}),
       },
@@ -113,13 +167,22 @@ export const apiService = {
     }
 
     const raw = await response.json();
-    return normalizeAnalysisResult(raw);
+    const result = normalizeAnalysisResult(raw);
+    if (blockchainTx) {
+      result.blockchainTx = blockchainTx;
+    }
+    return result;
   },
 
   /**
    * Pathway B: URL Analysis
    */
   analyzeUrl: async (url: string): Promise<AnalysisResult> => {
+    const authHeaders = getAuthHeaders();
+    if (!authHeaders.Authorization && !authHeaders['x-api-key']) {
+      throw new Error('Please sign in to your SentinelAI account before starting an analysis.');
+    }
+
     // Prefer n8n when configured, but fall back to FastAPI.
     if (N8N_WEBHOOK_URL) {
       const response = await fetch(N8N_WEBHOOK_URL, {
@@ -136,12 +199,16 @@ export const apiService = {
       }
     }
 
-    const response = await fetch(`${FASTAPI_URL}/analyze_url`, {
+    const response = await fetch(`${FASTAPI_URL}/analyse/url`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...authHeaders,
       },
-      body: JSON.stringify({ url }),
+      body: JSON.stringify({
+        input: url,
+        type: inferMediaTypeFromUrl(url),
+      }),
     });
 
     if (!response.ok) {
@@ -185,5 +252,43 @@ export const apiService = {
       timestamp: new Date().toISOString(),
       raw: data,
     };
+  },
+
+  getHistory: async (mediaType?: 'image' | 'video') => {
+    const authHeaders = getAuthHeaders();
+    if (!authHeaders.Authorization && !authHeaders['x-api-key']) {
+      throw new Error('Please sign in to your SentinelAI account before loading history.');
+    }
+
+    const query = mediaType ? `?media_type=${encodeURIComponent(mediaType)}` : '';
+    const response = await fetch(`${FASTAPI_URL}/history${query}`, {
+      headers: {
+        ...authHeaders,
+      },
+    });
+
+    if (!response.ok) {
+      const detail = await response.text().catch(() => '');
+      throw new Error(`History fetch failed: ${response.statusText}${detail ? ` - ${detail}` : ''}`);
+    }
+
+    return response.json();
+  },
+
+  verifyPayment: async (signature: string, amount: number): Promise<PaymentVerificationResult> => {
+    const response = await fetch(`${FASTAPI_URL}/verify-payment`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ signature, amount }),
+    });
+
+    if (!response.ok) {
+      const detail = await response.text().catch(() => '');
+      throw new Error(`Payment verification failed: ${response.statusText}${detail ? ` - ${detail}` : ''}`);
+    }
+
+    return response.json();
   },
 };

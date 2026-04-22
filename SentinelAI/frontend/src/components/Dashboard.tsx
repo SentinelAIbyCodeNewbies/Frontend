@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { ShieldAlert, ShieldCheck, Activity, Clock, Globe, RefreshCcw, ArrowLeft } from 'lucide-react';
+import { ShieldAlert, ShieldCheck, Activity, Clock, Globe, RefreshCcw, ArrowLeft, Link as LinkIcon } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { cn } from '../lib/utils';
 import { GlassEffect, GlassButton } from './ui/liquid-glass';
@@ -141,6 +141,25 @@ export default function Dashboard() {
                       <p className="text-xs font-mono text-white/60">{analysisTimestamp}</p>
                     </div>
                   </div>
+
+                  {result.blockchainTx && (
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                        <LinkIcon size={18} />
+                      </div>
+                      <div className="overflow-hidden">
+                        <p className="text-[10px] uppercase tracking-widest text-emerald-500/70">Integrity Proof</p>
+                        <a 
+                          href={`https://explorer.solana.com/tx/${result.blockchainTx}?cluster=devnet`} 
+                          target="_blank" 
+                          rel="noreferrer"
+                          className="text-xs font-mono text-emerald-400 hover:text-emerald-300 truncate hover:underline"
+                        >
+                          View on Solana Explorer
+                        </a>
+                      </div>
+                    </div>
+                  )}
 
                   {(result.metadataRiskLevel || (result.metadataFlags && result.metadataFlags.length > 0)) && (
                     <div className="pt-2">

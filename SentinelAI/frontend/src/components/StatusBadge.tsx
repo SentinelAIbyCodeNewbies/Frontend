@@ -5,7 +5,7 @@ type BackendStatus = 'online' | 'offline';
 const BASE_URL =
   import.meta.env.VITE_API_URL ||
   import.meta.env.VITE_FASTAPI_URL ||
-  'http://localhost:8080';
+  '/api';
 
 export default function StatusBadge() {
   const [status, setStatus] = useState<BackendStatus>('offline');

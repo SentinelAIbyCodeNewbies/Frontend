@@ -1,9 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Key, Plus, Copy, Check, Shield, Lock, Trash2, Clock, Terminal } from 'lucide-react';
+import { Key, Plus, Copy, Check, Terminal, RefreshCw } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { GlassEffect, GlassButton } from './ui/liquid-glass';
-import { cn } from '../lib/utils';
 
 interface ApiKey {
   key: string;
@@ -13,47 +12,55 @@ interface ApiKey {
 export default function ApiDashboard() {
   const [keys, setKeys] = useState<ApiKey[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [password, setPassword] = useState('');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
-  const { token, setError, setLoading, isLoading } = useStore();
+  const { token, apiKey, user, setError, setLoading, setUser } = useStore();
 
   const fetchKeys = async () => {
-    try {
-      const res = await fetch('/api/keys', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setKeys(data);
-      }
-    } catch (err) {
-      console.error('Failed to fetch keys');
+    if (!apiKey) {
+      setKeys([]);
+      return;
     }
+
+    setKeys([
+      {
+        key: apiKey,
+        created_at: new Date().toISOString(),
+      },
+    ]);
   };
 
   useEffect(() => {
-    if (token) fetchKeys();
-  }, [token]);
+    fetchKeys();
+  }, [apiKey]);
 
-  const handleGenerate = async (e?: React.FormEvent) => {
+  const handleGenerate = async (e?: FormEvent) => {
     if (e) e.preventDefault();
-    setLoading(true, 'Verifying identity...');
+    if (!token) {
+      setError('Please sign in before regenerating your API key.');
+      return;
+    }
+
+    setLoading(true, 'Regenerating API key...');
     try {
-      const res = await fetch('/api/keys/generate', {
+      const baseUrl = import.meta.env.VITE_API_URL || '/api';
+      const res = await fetch(`${baseUrl}/auth/regenerate-key`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ password })
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to generate key');
+      if (!res.ok) throw new Error(data.detail || 'Failed to generate key');
+
+      const nextApiKey = typeof data.api_key === 'string' ? data.api_key : null;
+      if (!nextApiKey) {
+        throw new Error('Backend did not return the regenerated API key.');
+      }
 
       setIsGenerating(false);
-      setPassword('');
-      fetchKeys();
+      setUser(user, token, nextApiKey);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Generation failed');
     } finally {
@@ -80,8 +87,8 @@ export default function ApiDashboard() {
               Developer <span className="text-emerald-500">Keys</span>
             </h1>
             <p className="text-lg text-white/40 max-w-xl font-light">
-              Generate and manage your neural forensic API keys. 
-              Protected by multi-factor semantic verification.
+              Generate and manage your neural forensic API key.
+              Connected to the live FastAPI developer auth flow.
             </p>
           </div>
 
@@ -103,8 +110,8 @@ export default function ApiDashboard() {
                 <Key size={32} />
               </div>
               <div className="space-y-2">
-                <h3 className="text-white font-medium">No API keys found</h3>
-                <p className="text-sm text-white/20">Generate your first key to start building with SentinelAI.</p>
+                    <h3 className="text-white font-medium">No API keys found</h3>
+                <p className="text-sm text-white/20">Sign in to load your current key, or generate a fresh one.</p>
               </div>
             </GlassEffect>
           ) : (
@@ -166,29 +173,16 @@ export default function ApiDashboard() {
                 <div className="text-center space-y-4">
                   <div className="flex justify-center">
                     <div className="w-12 h-12 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-500">
-                      <Lock size={24} />
+                      <RefreshCw size={24} />
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <h3 className="text-xl font-medium text-white">Verify Password</h3>
-                    <p className="text-sm text-white/40">Please enter your password to generate a new API key.</p>
+                    <h3 className="text-xl font-medium text-white">Regenerate API Key</h3>
+                    <p className="text-sm text-white/40">This will replace your current key with a new one from the backend.</p>
                   </div>
                 </div>
 
                 <form onSubmit={handleGenerate} className="space-y-6">
-                  <div className="space-y-2">
-                    <label className="text-[10px] uppercase tracking-widest text-white/20 ml-1">Password</label>
-                    <input 
-                      type="password" 
-                      required
-                      autoFocus
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full bg-white/[0.03] border border-white/10 rounded-xl py-3 px-4 text-sm text-white focus:outline-none focus:border-emerald-500/50 transition-all"
-                    />
-                  </div>
-
                   <div className="flex gap-4">
                     <button 
                       type="button"
@@ -201,7 +195,7 @@ export default function ApiDashboard() {
                       onClick={handleGenerate}
                       className="flex-[2] bg-emerald-500 hover:bg-emerald-400 py-4"
                     >
-                      <span className="text-black font-medium">Verify & Generate</span>
+                      <span className="text-black font-medium">Regenerate Key</span>
                     </GlassButton>
                   </div>
                 </form>
