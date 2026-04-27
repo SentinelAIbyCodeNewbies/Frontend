@@ -95,6 +95,7 @@ export default function ApiDashboard() {
           <GlassButton 
             onClick={() => setIsGenerating(true)}
             className="bg-emerald-500 hover:bg-emerald-400 px-8 py-4"
+            style={{ boxShadow: 'none' }}
           >
             <div className="flex items-center gap-2 text-black font-medium">
               <Plus size={18} />
@@ -194,6 +195,7 @@ export default function ApiDashboard() {
                     <GlassButton 
                       onClick={handleGenerate}
                       className="flex-[2] bg-emerald-500 hover:bg-emerald-400 py-4"
+                      style={{ boxShadow: 'none' }}
                     >
                       <span className="text-black font-medium">Regenerate Key</span>
                     </GlassButton>

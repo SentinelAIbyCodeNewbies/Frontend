@@ -1,6 +1,6 @@
 import { motion } from 'motion/react';
 import { cn } from '../lib/utils';
-import logoImage from '../assets/logo.png';
+import logoImage from '../assets/deepfake_ai_logo_final.svg';
 
 interface LogoProps {
   className?: string;

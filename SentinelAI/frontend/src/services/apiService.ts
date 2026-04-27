@@ -105,9 +105,10 @@ function normalizeAnalysisResult(raw: any): AnalysisResult {
 
   const sourceUrl = (raw?.source_url ?? raw?.sourceUrl ?? raw?.original_url) as string | undefined;
 
+  const timestampRaw = raw?.timestamp || raw?.created_at || raw?.date;
   const timestamp =
-    typeof raw?.timestamp === 'string' && raw.timestamp
-      ? raw.timestamp
+    typeof timestampRaw === 'string' && timestampRaw
+      ? timestampRaw
       : new Date().toISOString();
 
   return {
@@ -261,7 +262,7 @@ export const apiService = {
     }
 
     const query = mediaType ? `?media_type=${encodeURIComponent(mediaType)}` : '';
-    const response = await fetch(`${FASTAPI_URL}/history${query}`, {
+    const response = await fetch(`${FASTAPI_URL}/history/${query}`, {
       headers: {
         ...authHeaders,
       },

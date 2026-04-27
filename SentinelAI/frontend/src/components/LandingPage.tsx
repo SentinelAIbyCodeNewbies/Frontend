@@ -353,6 +353,7 @@ export default function LandingPage() {
                           'w-full bg-emerald-500 hover:bg-emerald-400 py-3.5',
                           (!url || isLoading) && 'opacity-50 pointer-events-none'
                         )}
+                        style={{ boxShadow: 'none' }}
                       >
                         <div className="flex items-center justify-center gap-2 text-black font-medium">
                           Analyze Source
@@ -388,6 +389,7 @@ export default function LandingPage() {
                           'w-full bg-emerald-500 hover:bg-emerald-400 py-3.5',
                           (!text.trim() || isLoading) && 'opacity-50 pointer-events-none'
                         )}
+                        style={{ boxShadow: 'none' }}
                       >
                         <div className="flex items-center justify-center gap-2 text-black font-medium">
                           Run Semantic Check
@@ -532,7 +534,10 @@ export default function LandingPage() {
                   className="w-full bg-white/[0.02] border border-white/5 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/10 focus:outline-none focus:border-emerald-500/30 transition-colors resize-none"
                 />
               </div>
-              <GlassButton className="w-full py-3 bg-emerald-500/10 border-emerald-500/20 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all">
+              <GlassButton 
+                className="w-full py-3 bg-emerald-500/10 border-emerald-500/20 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all"
+                style={{ boxShadow: 'none' }}
+              >
                 <span className="text-[10px] uppercase tracking-widest">Submit Feedback</span>
               </GlassButton>
             </form>

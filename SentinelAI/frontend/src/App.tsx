@@ -4,7 +4,7 @@
  */
 
 import { AnimatePresence, motion } from 'motion/react';
-import { Home, Terminal, LogOut, LogIn } from 'lucide-react';
+import { Home, Terminal, LogOut, LogIn, History } from 'lucide-react';
 import { useStore } from './store/useStore';
 import ThreeBackground from './components/ThreeBackground';
 import LoadingScreen from './components/LoadingScreen';
@@ -13,6 +13,7 @@ import LandingPage from './components/LandingPage';
 import Dashboard from './components/Dashboard';
 import AuthPage from './components/AuthPage';
 import ApiDashboard from './components/ApiDashboard';
+import HistoryPage from './components/HistoryPage';
 import { GlassFilter } from './components/ui/liquid-glass';
 import { AppWalletProvider } from './components/WalletProvider';
 import { IntegrityStatus } from './components/IntegrityStatus';
@@ -43,6 +44,8 @@ export default function App() {
                 <AuthPage />
               ) : currentPage === 'api-dashboard' ? (
                 <ApiDashboard />
+              ) : currentPage === 'history' ? (
+                <HistoryPage />
               ) : result ? (
                 <Dashboard />
               ) : (
@@ -67,20 +70,26 @@ export default function App() {
                 <span className="text-[10px] uppercase tracking-widest font-medium">Home</span>
               </button>
               
+              {user && (
+                <>
+                  <div className="w-px h-4 bg-white/10 mx-1" />
+                  <button 
+                    onClick={() => setCurrentPage('history')}
+                    className={cn(
+                      "flex items-center gap-2 px-4 py-2 rounded-full transition-all",
+                      currentPage === 'history' ? "bg-emerald-500 text-black" : "text-white/40 hover:text-white"
+                    )}
+                  >
+                    <History size={16} />
+                    <span className="text-[10px] uppercase tracking-widest font-medium">History</span>
+                  </button>
+                </>
+              )}
+              
               <div className="w-px h-4 bg-white/10 mx-1" />
 
               {user ? (
                 <>
-                  <button 
-                    onClick={() => setCurrentPage('api-dashboard')}
-                    className={cn(
-                      "flex items-center gap-2 px-4 py-2 rounded-full transition-all",
-                      currentPage === 'api-dashboard' ? "bg-emerald-500 text-black" : "text-white/40 hover:text-white"
-                    )}
-                  >
-                    <Terminal size={16} />
-                    <span className="text-[10px] uppercase tracking-widest font-medium">API Keys</span>
-                  </button>
                   <button 
                     onClick={logout}
                     className="flex items-center gap-2 px-4 py-2 rounded-full text-white/40 hover:text-rose-500 transition-all"

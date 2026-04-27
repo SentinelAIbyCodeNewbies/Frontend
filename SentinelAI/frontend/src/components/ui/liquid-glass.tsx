@@ -103,15 +103,17 @@ export const GlassDock: React.FC<{ icons: DockIcon[]; href?: string }> = ({
 );
 
 // Button Component
-export const GlassButton: React.FC<{ children: React.ReactNode; href?: string; className?: string; onClick?: () => void }> = ({
+export const GlassButton: React.FC<{ children: React.ReactNode; href?: string; className?: string; onClick?: () => void; style?: React.CSSProperties }> = ({
   children,
   href,
   className,
-  onClick
+  onClick,
+  style
 }) => (
   <div onClick={onClick} className="cursor-pointer">
     <GlassEffect
       href={href}
+      style={style}
       className={cn("rounded-3xl overflow-hidden", className)}
     >
       <div
@@ -172,7 +174,7 @@ export const GlassFilter: React.FC = () => (
       <feDisplacementMap
         in="SourceGraphic"
         in2="softMap"
-        scale="12"
+        scale="4"
         xChannelSelector="R"
         yChannelSelector="G"
       />

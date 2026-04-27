@@ -1,3 +1,4 @@
+// testing edit
 import "dotenv/config";
 import express from "express";
 import { createServer as createViteServer } from "vite";
@@ -12,7 +13,7 @@ async function startServer() {
   app.use("/api", async (req, res) => {
     try {
       const path = req.originalUrl.replace(/^\/api/, "");
-      const targetUrl = new URL(path, BACKEND_URL);
+      const targetUrl = new URL(path.startsWith('/') ? path : '/' + path, BACKEND_URL);
       
       console.log(`[Proxy] ${req.method} ${req.originalUrl} -> ${targetUrl.href}`);
 

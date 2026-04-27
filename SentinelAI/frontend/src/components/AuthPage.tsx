@@ -55,7 +55,7 @@ export default function AuthPage() {
       }
 
       setUser({ email }, token, apiKey);
-      setCurrentPage('api-dashboard');
+      setCurrentPage('home');
     } catch (err) {
       setLocalError(err instanceof Error ? err.message : 'Authentication failed');
     } finally {
