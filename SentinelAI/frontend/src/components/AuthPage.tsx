@@ -23,7 +23,10 @@ export default function AuthPage() {
       if (mode === 'register') {
         const registerRes = await fetch(buildApiUrl('/auth/register'), {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'ngrok-skip-browser-warning': 'true'
+          },
           body: JSON.stringify({ email, password }),
         });
         const regContentType = registerRes.headers.get('content-type');
@@ -43,7 +46,10 @@ export default function AuthPage() {
 
       const loginRes = await fetch(buildApiUrl('/auth/login'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'ngrok-skip-browser-warning': 'true'
+        },
         body: JSON.stringify({ email, password }),
       });
       const contentType = loginRes.headers.get('content-type');

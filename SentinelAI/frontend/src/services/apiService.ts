@@ -38,6 +38,7 @@ function getAuthHeaders(): Record<string, string> {
   return {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(apiKey ? { 'x-api-key': apiKey } : {}),
+    'ngrok-skip-browser-warning': 'true',
   };
 }
 
@@ -224,7 +225,10 @@ export const apiService = {
   analyzeText: async (text: string): Promise<AnalysisResult> => {
     const response = await fetch(buildApiUrl('/verify_news'), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true'
+      },
       body: JSON.stringify({ headline: text }),
     });
 
@@ -290,6 +294,7 @@ export const apiService = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true'
       },
       body: JSON.stringify({ signature, amount }),
     });
