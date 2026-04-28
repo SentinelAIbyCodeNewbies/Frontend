@@ -59,8 +59,8 @@ export default function HistoryPage() {
         const normalized = items.map(normalizeHistoryItem);
         setHistory(normalized);
       } catch (err) {
-        console.error('Failed to fetch history:', err);
-        setFetchError(err instanceof Error ? err.message : 'Unknown error');
+        console.error('[History] Fetch error:', err);
+        setFetchError(err instanceof Error ? err.message : 'Unknown error occurred while accessing archives.');
       } finally {
         setIsLoading(false);
       }
