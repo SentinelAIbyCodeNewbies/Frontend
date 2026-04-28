@@ -4,5 +4,16 @@
       "source": "/api/:path*",
       "destination": "https://mandarin-carpentry-defender.ngrok-free.dev/:path*"
     }
+  ],
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "ngrok-skip-browser-warning",
+          "value": "true"
+        }
+      ]
+    }
   ]
 }
