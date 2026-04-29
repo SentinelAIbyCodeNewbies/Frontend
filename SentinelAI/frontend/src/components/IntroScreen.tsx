@@ -22,8 +22,9 @@ export default function IntroScreen() {
     };
 
     const handleTouchMove = (e: TouchEvent) => {
-      // Simple touch detection for scroll
-      setEntered(true);
+      if (e.touches[0].clientY < window.innerHeight / 2) {
+        setEntered(true);
+      }
     };
 
     window.addEventListener('scroll', handleScroll);

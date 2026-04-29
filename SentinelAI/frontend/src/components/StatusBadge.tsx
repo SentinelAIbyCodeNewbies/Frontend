@@ -10,7 +10,7 @@ export default function StatusBadge() {
   useEffect(() => {
     const checkStatus = async () => {
       try {
-        const response = await fetch(buildApiUrl('/'));
+        const response = await fetch(buildApiUrl('/health'));
         if (response.ok) {
           setStatus('online');
           setLastSuccessfulCheck(new Date().toLocaleTimeString());

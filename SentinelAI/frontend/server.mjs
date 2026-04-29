@@ -15,7 +15,7 @@ async function startServer() {
       let subPath = req.originalUrl.replace(/^\/api/, "");
       if (!subPath.startsWith('/')) subPath = '/' + subPath;
       
-      const targetUrl = new URL(subPath, BACKEND_URL);
+      const targetUrl = new URL(BACKEND_URL + subPath);
       
       console.log(`[Proxy] ${req.method} ${req.originalUrl} -> ${targetUrl.href}`);
 
