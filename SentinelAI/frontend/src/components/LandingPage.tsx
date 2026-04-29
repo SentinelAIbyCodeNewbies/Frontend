@@ -30,6 +30,7 @@ export default function LandingPage() {
       setUploadStatus('fingerprinting');
       setLoading(true, 'Generating secure fingerprint...');
       const fileHash = await calculateFileHash(file);
+      // Hash console.log removed for security
 
       setUploadStatus('uploading');
       setLoading(true, 'Uploading file and anchoring integrity proof...');
@@ -431,7 +432,10 @@ export default function LandingPage() {
                   invisible to the human eye.
                 </p>
                 <div className="pt-4">
-                  <GlassButton className="px-8 py-3 bg-white/[0.03] border-white/10 hover:border-emerald-500/50 transition-all">
+                  <GlassButton 
+                    onClick={() => window.open('https://github.com/SentinelAIbyCodeNewbies', '_blank', 'noopener,noreferrer')}
+                    className="px-8 py-3 bg-white/[0.03] border-white/10 hover:border-emerald-500/50 transition-all"
+                  >
                     <span className="text-[10px] uppercase tracking-widest text-white/60">Explore Documentation</span>
                   </GlassButton>
                 </div>
@@ -448,82 +452,63 @@ export default function LandingPage() {
           </Card>
         </div>
 
-        <div className="pt-20 md:pt-24 space-y-10 md:space-y-12 pb-10 md:pb-16 w-full max-w-5xl">
-          <div className="text-center space-y-4">
-            <h2 className="text-2xl md:text-3xl font-medium tracking-tighter text-white">Trusted by Forensics Experts</h2>
-            <p className="text-white/40 text-sm max-w-md mx-auto font-light">
-              Leading journalists and security agencies rely on SentinelAI for visual verification.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              { name: 'Sarah Chen', role: 'Digital Forensic Lead', text: 'The accuracy of the neural core is unprecedented. It caught artifacts that our manual process missed entirely.' },
-              { name: 'Marcus Thorne', role: 'Investigative Journalist', text: 'SentinelAI has become an essential tool in our newsroom for verifying viral social media content.' },
-              { name: 'Dr. Elena Vance', role: 'AI Ethics Researcher', text: 'A vital layer of defense in the age of synthetic media. The transparency of the report is key.' },
-            ].map((t, i) => (
-              <GlassEffect key={i} className="p-8 rounded-3xl border border-white/5 text-left h-full space-y-6">
-                <div className="space-y-6">
-                  <p className="text-white/60 text-sm leading-relaxed italic">"{t.text}"</p>
-                  <div className="space-y-1">
-                    <p className="text-white text-xs font-medium">{t.name}</p>
-                    <p className="text-white/20 text-[10px] uppercase tracking-widest">{t.role}</p>
-                  </div>
-                </div>
-              </GlassEffect>
-            ))}
-          </div>
-        </div>
+       
 
         <div className="pt-20 md:pt-24 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 pb-16 md:pb-20 w-full max-w-5xl">
-          <GlassEffect className="p-8 rounded-3xl border border-white/5 flex flex-col items-center justify-center text-center space-y-6 group">
-            <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 group-hover:scale-110 transition-transform duration-500">
-              <Mail size={32} strokeWidth={1.5} />
+          {/* Left Card: Contact */}
+          <GlassEffect className="p-8 rounded-3xl border border-white/5 flex flex-col h-full group">
+            <div className="flex flex-col items-center justify-center text-center flex-1 space-y-6">
+              <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 group-hover:scale-110 transition-transform duration-500">
+                <Mail size={32} strokeWidth={1.5} />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-medium text-white">Contact With Us</h3>
+                <p className="text-white/40 text-sm font-light">Have questions? Reach out to our technical support team directly.</p>
+              </div>
             </div>
-            <div className="space-y-2">
-              <h3 className="text-xl font-medium text-white">Contact With Us</h3>
-              <p className="text-white/40 text-sm font-light">Have questions? Reach out to our technical support team directly.</p>
+            <div className="pt-8 mt-auto w-full">
+              <GlassButton
+                onClick={() => {
+                  window.location.href = 'mailto:support@sentinelai.demo';
+                }}
+                className="w-full py-3 bg-white/[0.03] border-white/10 hover:border-emerald-500/50 transition-all"
+              >
+                <span className="text-[10px] uppercase tracking-widest text-white/60">Send Email</span>
+              </GlassButton>
             </div>
-            <GlassButton
-              onClick={() => {
-                window.location.href = 'mailto:support@sentinelai.demo';
-              }}
-              className="px-8 py-3 bg-white/[0.03] border-white/10 hover:border-emerald-500/50 transition-all"
-            >
-              <span className="text-[10px] uppercase tracking-widest text-white/60">Send Email</span>
-            </GlassButton>
           </GlassEffect>
 
-          <GlassEffect className="p-8 rounded-3xl border border-white/5 text-left space-y-6">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+          {/* Right Card: Feedback */}
+          <GlassEffect className="p-8 rounded-3xl border border-white/5 flex flex-col h-full text-left">
+            <div className="flex items-center gap-4 mb-8">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 shrink-0">
                 <MessageSquare size={20} strokeWidth={1.5} />
               </div>
               <h3 className="text-xl font-medium text-white">Give Your Feedback</h3>
             </div>
-            <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
-              <div className="space-y-2">
-                <label className="text-[10px] uppercase tracking-widest text-white/20 ml-1">Your Email</label>
-                <input
-                  type="email"
-                  placeholder="name@gmail.com"
-                  className="w-full bg-white/[0.02] border border-white/5 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/10 focus:outline-none focus:border-emerald-500/30 transition-colors"
-                />
+            
+            <form className="flex flex-col flex-1" onSubmit={(e) => e.preventDefault()}>
+              <div className="flex justify-between items-end ml-1 mb-2">
+                <label className="text-[10px] uppercase tracking-widest text-white/20">Message</label>
+                {storeUser?.email && (
+                  <span className="text-[9px] uppercase tracking-widest text-white/20">
+                    Sending as: <span className="text-emerald-500/60 lowercase tracking-normal">{storeUser.email}</span>
+                  </span>
+                )}
               </div>
-              <div className="space-y-2">
-                <label className="text-[10px] uppercase tracking-widest text-white/20 ml-1">Message</label>
-                <textarea
-                  placeholder="How can we improve?"
-                  rows={3}
-                  className="w-full bg-white/[0.02] border border-white/5 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/10 focus:outline-none focus:border-emerald-500/30 transition-colors resize-none"
-                />
+              <textarea
+                placeholder="How can we improve?"
+                rows={5}
+                className="w-full bg-white/[0.02] border border-white/5 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/10 focus:outline-none focus:border-emerald-500/30 transition-colors resize-none mb-6"
+              />
+              <div className="mt-auto w-full">
+                <GlassButton 
+                  className="w-full py-3 bg-emerald-500/10 border-emerald-500/20 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all"
+                  style={{ boxShadow: 'none' }}
+                >
+                  <span className="text-[10px] uppercase tracking-widest">Submit Feedback</span>
+                </GlassButton>
               </div>
-              <GlassButton 
-                className="w-full py-3 bg-emerald-500/10 border-emerald-500/20 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all"
-                style={{ boxShadow: 'none' }}
-              >
-                <span className="text-[10px] uppercase tracking-widest">Submit Feedback</span>
-              </GlassButton>
             </form>
           </GlassEffect>
         </div>
