@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://mandarin-carpentry-defender.ngrok-free.dev/:path*"
+      "destination": "http://13.51.198.216:8080/:path*"
     }
   ],
   "headers": [
