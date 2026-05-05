@@ -1,21 +1,27 @@
 import { buildApiUrl } from '../lib/api-base';
-/**
- * SentinelAI API Service
- * Handles communication with FastAPI, n8n, and Gemini API.
- */
-
 
 export interface AnalysisResult {
-  verdict: 'Real' | 'Fake';
+  verdict: 'Real' | 'Fake' | string;
   newsVerdict?: string;
-  confidence: number;
+  confidence: number | string;
   framesAnalyzed?: number;
   suspiciousFrames?: number;
   sourceUrl?: string;
   timestamp: string;
+
   reasoning?: string;
   claim?: string;
   evidence?: string[];
+  
+  summary?: string;
+  nuance?: string | null;
+  sources?: Array<{
+    title: string;
+    domain: string;
+    stance: string;
+    snippet: string;
+  }>;
+
   geminiAnalysis?: string;
   systemWarning?: string | null;
   metadataRiskLevel?: string;
@@ -58,7 +64,6 @@ function inferMediaTypeFromUrl(url: string): 'image' | 'video' {
 }
 
 function normalizeAnalysisResult(raw: any): AnalysisResult {
-  // Backend may return either a flat legacy schema or a nested schema under `visual_analysis`.
   const visual = raw?.visual_analysis ?? raw?.visualAnalysis ?? raw;
   const metadata = raw?.metadata_analysis ?? raw?.metadataAnalysis ?? undefined;
 
@@ -115,7 +120,6 @@ function normalizeAnalysisResult(raw: any): AnalysisResult {
       typeof suspiciousFrames === 'number' ? suspiciousFrames : Number(suspiciousFrames ?? 0),
     sourceUrl,
     timestamp,
-    // If the backend includes these, surface them in UI.
     geminiAnalysis: typeof raw?.gemini_analysis === 'string' ? raw.gemini_analysis : undefined,
     systemWarning: typeof raw?.system_warning === 'string' || raw?.system_warning === null ? raw.system_warning : undefined,
     metadataRiskLevel: typeof metadata?.risk_level === 'string' ? metadata.risk_level : undefined,
@@ -132,9 +136,6 @@ function normalizeAnalysisResult(raw: any): AnalysisResult {
 }
 
 export const apiService = {
-  /**
-   * Pathway A: Local Upload
-   */
   analyzeFile: async (file: File, fileHash: string, walletAddress?: string, blockchainTx?: string): Promise<AnalysisResult> => {
     const authHeaders = getAuthHeaders();
     if (!authHeaders.Authorization && !authHeaders['x-api-key']) {
@@ -172,30 +173,11 @@ export const apiService = {
     return result;
   },
 
-  /**
-   * Pathway B: URL Analysis
-   */
   analyzeUrl: async (url: string): Promise<AnalysisResult> => {
     const authHeaders = getAuthHeaders();
     if (!authHeaders.Authorization && !authHeaders['x-api-key']) {
       throw new Error('Please sign in to your SentinelAI account before starting an analysis.');
     }
-
-    // Prefer n8n when configured, but fall back to FastAPI.
-    // if (N8N_WEBHOOK_URL) {
-    //   const response = await fetch(N8N_WEBHOOK_URL, {
-    //     method: 'POST',
-    //     headers: {
-    //       'Content-Type': 'application/json',
-    //     },
-    //     body: JSON.stringify({ url }),
-    //   });
-
-    //   if (response.ok) {
-    //     const raw = await response.json();
-    //     return normalizeAnalysisResult(raw);
-    //   }
-    // }
 
     const response = await fetch(buildApiUrl('/analyse/url'), {
       method: 'POST',
@@ -218,12 +200,8 @@ export const apiService = {
     return normalizeAnalysisResult(raw);
   },
 
-  /**
-   * Pathway C: Text Analysis (Fake News Detection)
-   * Uses FastAPI `/verify_news` (alias: `/analyze_news`)
-   */
-  analyzeText: async (text: string): Promise<AnalysisResult> => {
-    const response = await fetch(buildApiUrl('/verify_news'), {
+  analyzeText: async (text: string) => {
+    const response = await fetch(buildApiUrl('/factcheck'), {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
@@ -233,25 +211,17 @@ export const apiService = {
     });
 
     if (!response.ok) {
-      const detail = await response.text().catch(() => '');
-      throw new Error(`News analysis failed: ${response.statusText}${detail ? ` - ${detail}` : ''}`);
+      const errorData = await response.json().catch(() => ({}));
+      const detail = errorData.detail || response.statusText;
+      throw new Error(`Headline analysis failed: ${detail}`); 
     }
 
-    const data: any = await response.json();
-    const newsVerdict = typeof data?.verdict === 'string' ? data.verdict : '';
-    const verdictRaw = newsVerdict.toLowerCase();
-    const verdict: AnalysisResult['verdict'] =
-      verdictRaw.includes('fake') ? 'Fake' : verdictRaw.includes('real') ? 'Real' : 'Real';
+    // The backend provides a rich JSON object including verdict, summary, nuance, sources.
+    const data = await response.json();
 
     return {
-      verdict,
-      newsVerdict,
-      confidence: typeof data?.confidence === 'number' ? data.confidence : Number(data?.confidence ?? 0),
-      reasoning: typeof data?.reasoning === 'string' ? data.reasoning : '',
-      claim: typeof data?.claim === 'string' ? data.claim : undefined,
-      evidence: Array.isArray(data?.evidence) ? data.evidence : undefined,
-      timestamp: new Date().toISOString(),
-      raw: data,
+      ...data,
+      timestamp: new Date().toISOString()
     };
   },
 

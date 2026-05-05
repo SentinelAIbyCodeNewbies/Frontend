@@ -1,13 +1,13 @@
 import { useState, useRef, type DragEvent, type FormEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Upload, Link as LinkIcon, ArrowRight, FileVideo, FileImage, Mail, MessageSquare, Send, ShieldAlert, ShieldCheck, Activity, LogIn } from 'lucide-react';
+import { Upload, Link as LinkIcon, ArrowRight, FileVideo, FileImage, Mail, MessageSquare, Send, ShieldAlert, ShieldCheck, Activity, LogIn, Globe } from 'lucide-react';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { useStore } from '../store/useStore';
 import { apiService } from '../services/apiService';
 import { calculateFileHash } from '../lib/crypto';
 import { cn } from '../lib/utils';
 import { GooeyText } from './ui/gooey-text-morphing';
-import { GlassEffect, GlassButton } from './ui/liquid-glass';
+import { GlassEffect } from './ui/liquid-glass';
 import { SparklesCore } from './ui/sparkles';
 import { SplineScene } from './ui/splite';
 import { Spotlight } from './ui/spotlight';
@@ -47,7 +47,10 @@ export default function LandingPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Analysis failed');
       setUploadStatus('idle');
+    } finally {
+      setLoading(false);
     }
+ 
   };
 
   const handleUrlSubmit = async (e: FormEvent) => {
@@ -61,6 +64,8 @@ export default function LandingPage() {
       setResult(res);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'URL analysis failed');
+    } finally {
+      setLoading(false)
     }
   };
 
@@ -68,13 +73,17 @@ export default function LandingPage() {
     if (e) e.preventDefault();
     if (!text.trim()) return;
     try {
-      setLoading(true, 'Analyzing semantic patterns...');
+      setLoading(true, 'Fact-checking with SentinelAI pipeline...');
       const res = await apiService.analyzeText(text);
       setLoading(true, 'Verifying cross-references...');
       await new Promise((r) => setTimeout(r, 1000));
       setTextResult(res);
     } catch (err) {
+      console.error(err)
       setError(err instanceof Error ? err.message : 'Text analysis failed');
+    }
+    finally{
+      setLoading(false);
     }
   };
 
@@ -88,13 +97,16 @@ export default function LandingPage() {
   };
 
   /* ─── derived verdict helpers ─────────────────────────────────────── */
-  const getVerdictMeta = (result: typeof textResult) => {
+  const getVerdictMeta = (result: any) => {
     if (!result) return null;
-    const label = (result.newsVerdict || result.verdict || '').trim();
+    const label = (result.verdict || result.newsVerdict || 'Unverified').trim();
     const lower = label.toLowerCase();
-    const isFake = lower.includes('fake');
-    const isInconclusive = lower.includes('inconclusive') || lower.includes('insufficient');
-    const accent = isFake ? 'rose' : isInconclusive ? 'neutral' : 'emerald';
+    
+    // Map new backend verdicts
+    const isRed = lower.includes('fake') || lower.includes('false') || lower.includes('misleading') || lower.includes('disputed');
+    const isGreen = lower.includes('true') || lower.includes('real');
+    const accent = isRed ? 'rose' : isGreen ? 'emerald' : 'neutral';
+    
     return { label, accent };
   };
 
@@ -103,7 +115,6 @@ export default function LandingPage() {
   return (
     <div className="relative min-h-screen flex flex-col items-center justify-center px-4 py-14 md:px-6 md:py-16">
 
-      {/* ── ambient background orbs ── */}
       <div className="pointer-events-none absolute inset-0 -z-20 overflow-hidden">
         <div className="landing-ambient-orb landing-ambient-orb--emerald" />
         <div className="landing-ambient-orb landing-ambient-orb--cyan" />
@@ -116,7 +127,6 @@ export default function LandingPage() {
         className="max-w-5xl w-full text-center space-y-10 md:space-y-12 relative"
       >
 
-        {/* ── sparkle / gradient header decoration ── */}
         <div className="absolute inset-0 -top-40 -z-10 w-full h-[120%] pointer-events-none">
           <div className="absolute inset-x-20 top-0 bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent h-[2px] w-3/4 blur-sm" />
           <div className="absolute inset-x-20 top-0 bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent h-px w-3/4" />
@@ -133,7 +143,6 @@ export default function LandingPage() {
           <div className="absolute inset-0 w-full h-full bg-black [mask-image:radial-gradient(50%_50%_at_50%_40%,transparent_20%,white)]" />
         </div>
 
-        {/* ── Hero headline ── */}
         <div className="space-y-5 relative">
           <motion.div
             className="flex flex-col items-center justify-center relative z-20"
@@ -167,14 +176,7 @@ export default function LandingPage() {
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.8 }}
                 onClick={() => setCurrentPage('auth')}
-                /* FIX: isolated rounded-full so the hover bg clips correctly */
-                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full
-                           bg-white/5 border border-white/10
-                           text-white/60
-                           hover:bg-white/10 hover:text-white
-                           active:scale-95
-                           transition-all duration-200 group
-                           overflow-hidden"   /* keeps bg inside the pill */
+                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 hover:text-white active:scale-95 transition-all duration-200 group overflow-hidden"
               >
                 <LogIn size={16} />
                 <span className="text-[10px] uppercase tracking-widest font-medium">Developer Portal</span>
@@ -184,14 +186,12 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* ── Main analysis card ── */}
         <div className="relative max-w-2xl mx-auto">
           <div className="absolute inset-0 -z-10 blur-3xl bg-emerald-500/5 rounded-full" />
 
           <GlassEffect className="rounded-3xl overflow-hidden shadow-2xl border border-white/10">
             <div className="flex flex-col w-full">
 
-              {/* Tab bar */}
               <div className="flex border-b border-white/5">
                 {(['upload', 'link', 'text'] as const).map((tab) => (
                   <button
@@ -199,22 +199,19 @@ export default function LandingPage() {
                     onClick={() => setActiveTab(tab)}
                     className={cn(
                       'flex-1 py-4 text-[10px] uppercase tracking-[0.2em] transition-all duration-300',
-                      /* FIX: no extra wrapper — button itself clips its own bg */
                       activeTab === tab
                         ? 'text-emerald-500 bg-white/[0.05]'
                         : 'text-white/30 hover:text-white/60 hover:bg-white/[0.02]'
                     )}
                   >
-                    {tab === 'upload' ? 'Local Media' : tab === 'link' ? 'Remote Link' : 'Fake News'}
+                    {tab === 'upload' ? 'Local Media' : tab === 'link' ? 'Remote Link' : 'Fact Check'}
                   </button>
                 ))}
               </div>
 
-              {/* Panel */}
               <div className="p-6 md:p-8 min-h-[300px] flex flex-col justify-center">
                 <AnimatePresence mode="wait">
 
-                  {/* ── Text result view ── */}
                   {textResult ? (
                     <motion.div
                       key="text-result"
@@ -245,58 +242,86 @@ export default function LandingPage() {
                               'text-3xl font-medium tracking-tighter uppercase',
                               verdictMeta.accent === 'rose' ? 'text-rose-500' : verdictMeta.accent === 'emerald' ? 'text-emerald-500' : 'text-white/70'
                             )}>
-                              {verdictMeta.label || 'Inconclusive'}
+                              {verdictMeta.label}
                             </h3>
                             <p className="text-[10px] uppercase tracking-widest text-white/20 mt-1">
-                              Confidence: {textResult.confidence}%
+                              Confidence: {textResult.confidence}
                             </p>
                           </div>
                         </div>
                       )}
 
-                      <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-6 space-y-3">
+                      <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-6 space-y-3 text-left">
                         <div className="flex items-center justify-between">
-                          <p className="text-[9px] uppercase tracking-widest text-white/20">Semantic Reasoning</p>
+                          <p className="text-[9px] uppercase tracking-widest text-white/20">Analysis Summary</p>
                           <Activity size={12} className="text-emerald-500/30" />
                         </div>
-                        <p className="text-sm text-white/60 font-light italic leading-relaxed">
-                          "{textResult.reasoning}"
+                        <p className="text-sm text-white/60 font-light leading-relaxed">
+                          {textResult.summary || "No summary provided by analysis."}
                         </p>
+                        {textResult.nuance && (
+                          <div className="mt-4 pt-4 border-t border-white/5">
+                            <p className="text-xs text-white/40 font-light italic leading-relaxed">
+                              <span className="text-emerald-500/60 font-medium not-italic mr-1">Nuance:</span>
+                              {textResult.nuance}
+                            </p>
+                          </div>
+                        )}
                       </div>
 
-                      {textResult.evidence && textResult.evidence.length > 0 && (
-                        <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-6 space-y-3">
+                      {textResult.sources && textResult.sources.length > 0 && (
+                        <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-6 space-y-4 text-left">
                           <div className="flex items-center justify-between">
-                            <p className="text-[9px] uppercase tracking-widest text-white/20">Evidence</p>
-                            <Activity size={12} className="text-emerald-500/30" />
+                            <p className="text-[9px] uppercase tracking-widest text-white/20">Verified Sources</p>
+                            <Globe size={12} className="text-emerald-500/30" />
                           </div>
-                          <ul className="space-y-2">
-                            {textResult.evidence.slice(0, 4).map((ev: string, idx: number) => (
-                              <li key={idx} className="text-xs text-white/60 leading-relaxed flex gap-2">
-                                <span className="text-emerald-500/40 shrink-0">—</span>
-                                {ev}
+                          <ul className="space-y-3">
+                            {textResult.sources.map((source: any, idx: number) => (
+                              <li key={idx} className="bg-white/[0.01] border border-white/5 rounded-xl p-4 space-y-2">
+                                <div className="flex justify-between items-start gap-2">
+                                  <a 
+                                    href={`https://${source.domain}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs font-medium text-white/80 hover:text-emerald-400 transition-colors line-clamp-1"
+                                  >
+                                    {source.title || source.domain}
+                                  </a>
+                                  <span className={cn(
+                                    "text-[9px] uppercase tracking-wider px-2 py-1 rounded-full shrink-0",
+                                    source.stance === 'Supports' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' :
+                                    source.stance === 'Refutes' ? 'bg-rose-500/10 text-rose-500 border border-rose-500/20' :
+                                    source.stance === 'Partial' ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' :
+                                    'bg-white/5 text-white/50 border border-white/10'
+                                  )}>
+                                    {source.stance}
+                                  </span>
+                                </div>
+                                <div className="text-[10px] text-white/30 uppercase tracking-widest flex items-center gap-1.5">
+                                  <LinkIcon size={10} />
+                                  {source.domain}
+                                </div>
+                                <p className="text-xs text-white/50 leading-relaxed pt-1">
+                                  {source.snippet}
+                                </p>
                               </li>
                             ))}
                           </ul>
                         </div>
                       )}
 
-                      {/* FIX: button uses rounded-xl + overflow-hidden so the glass bg clips properly */}
-                      <button
-                        onClick={reset}
-                        className="w-full py-3 rounded-xl overflow-hidden
-                                   border border-white/5
-                                   text-white/40 hover:text-white
-                                   bg-white/[0.02] hover:bg-white/[0.06]
-                                   transition-all duration-200
-                                   text-[10px] uppercase tracking-widest"
-                      >
-                        New Text Analysis
-                      </button>
+                     <button
+                      onClick={() => {
+                        reset(); 
+                        window.scrollTo({ top: 0, behavior: 'smooth' }); 
+                      }}
+                      className="w-full py-3 rounded-xl overflow-hidden border border-white/5 text-white/40 hover:text-white bg-white/[0.02] hover:bg-white/[0.06] transition-all duration-200 text-[10px] uppercase tracking-widest"
+                    >
+                      New News Analysis
+                    </button>
                     </motion.div>
 
                   ) : activeTab === 'upload' ? (
-                    /* ── Upload drop zone ── */
                     <motion.div
                       key="upload"
                       initial={{ opacity: 0, x: -10 }}
@@ -304,12 +329,8 @@ export default function LandingPage() {
                       exit={{ opacity: 0, x: 10 }}
                       transition={{ duration: 0.2 }}
                       className={cn(
-                        'relative group cursor-pointer border-2 border-dashed rounded-2xl',
-                        'transition-all duration-300 py-14 md:py-16',
-                        'flex flex-col items-center justify-center gap-4',
-                        isDragging
-                          ? 'border-emerald-500 bg-emerald-500/5'
-                          : 'border-white/10 hover:border-white/20 hover:bg-white/[0.01]'
+                        'relative group cursor-pointer border-2 border-dashed rounded-2xl transition-all duration-300 py-14 md:py-16 flex flex-col items-center justify-center gap-4',
+                        isDragging ? 'border-emerald-500 bg-emerald-500/5' : 'border-white/10 hover:border-white/20 hover:bg-white/[0.01]'
                       )}
                       onDragOver={onDragOver}
                       onDragLeave={onDragLeave}
@@ -326,19 +347,9 @@ export default function LandingPage() {
 
                       <div className="relative">
                         <Upload
-                          className={cn(
-                            'transition-colors duration-300',
-                            isDragging ? 'text-emerald-500' : 'text-white/20 group-hover:text-white/40'
-                          )}
-                          size={48}
-                          strokeWidth={1}
+                          className={cn('transition-colors duration-300', isDragging ? 'text-emerald-500' : 'text-white/20 group-hover:text-white/40')}
+                          size={48} strokeWidth={1}
                         />
-                        {isDragging && (
-                          <motion.div
-                            layoutId="glow"
-                            className="absolute inset-0 blur-xl bg-emerald-500/40"
-                          />
-                        )}
                       </div>
 
                       <div className="text-center space-y-1 z-10">
@@ -348,25 +359,14 @@ export default function LandingPage() {
 
                       {uploadStatus !== 'idle' && (
                         <p className="text-xs text-emerald-400 font-medium z-10 pt-2 animate-pulse flex items-center gap-2">
-                          <motion.span
-                            animate={{ opacity: [0.5, 1, 0.5] }}
-                            transition={{ duration: 1.2, repeat: Infinity }}
-                          >
-                            ●
-                          </motion.span>
+                          <motion.span animate={{ opacity: [0.5, 1, 0.5] }} transition={{ duration: 1.2, repeat: Infinity }}>●</motion.span>
                           {uploadStatus === 'fingerprinting' && 'Generating secure fingerprint…'}
                           {uploadStatus === 'uploading' && 'Uploading to SentinelAI core…'}
                         </p>
                       )}
-
-                      <div className="absolute bottom-4 flex gap-4 opacity-20">
-                        <FileVideo size={16} />
-                        <FileImage size={16} />
-                      </div>
                     </motion.div>
 
                   ) : activeTab === 'link' ? (
-                    /* ── URL form ── */
                     <motion.form
                       key="link"
                       initial={{ opacity: 0, x: 10 }}
@@ -389,51 +389,54 @@ export default function LandingPage() {
                         />
                       </div>
 
-                      {/* FIX: plain button with proper rounded + overflow so bg stays inside */}
                       <button
                         type="submit"
                         disabled={!url || isLoading}
+                        className={cn('w-full py-3.5 rounded-2xl overflow-hidden bg-emerald-500 hover:bg-emerald-400 text-black font-medium text-sm flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.99]', (!url || isLoading) && 'opacity-50 pointer-events-none')}
+                      >
+                        Analyze Source <ArrowRight size={18} />
+                      </button>
+                    </motion.form>
+
+                  ) : (
+                    <motion.form
+                      key="text"
+                      initial={{ opacity: 0, x: 10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -10 }}
+                      transition={{ duration: 0.2 }}
+                      onSubmit={handleTextSubmit}
+                      className="space-y-6"
+                    >
+                      <div className="relative group">
+                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-emerald-500 transition-colors duration-200 pointer-events-none">
+                          <MessageSquare size={20} />
+                        </div>
+                        <input
+                          type="text"
+                          placeholder="Paste a news headline or claim to fact-check..."
+                          value={text}
+                          onChange={(e) => setText(e.target.value)}
+                          className="w-full bg-white/[0.03] border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-emerald-500/50 focus:bg-white/[0.05] transition-all duration-200"
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={!text || isLoading}
                         className={cn(
-                          'w-full py-3.5 rounded-2xl overflow-hidden',
-                          'bg-emerald-500 hover:bg-emerald-400',
-                          'text-black font-medium text-sm',
-                          'flex items-center justify-center gap-2',
-                          'transition-all duration-200 active:scale-[0.99]',
-                          (!url || isLoading) && 'opacity-50 pointer-events-none'
+                          'w-full py-3.5 rounded-2xl overflow-hidden bg-emerald-500 hover:bg-emerald-400 text-black font-medium text-sm flex items-center justify-center gap-2 transition-all duration-200 active:scale-[0.99]',
+                          (!text || isLoading) && 'opacity-50 pointer-events-none'
                         )}
                       >
-                        Analyze Source
+                        Verify Headline
                         <ArrowRight size={18} />
                       </button>
 
                       <p className="text-[10px] text-center uppercase tracking-widest text-white/20">
-                        Processing via n8n neural pipeline
+                        Powered by Google Gemini & Verified Sources
                       </p>
                     </motion.form>
-
-                  ) : (
-                    /* ── Fake News coming-soon ── */
-                    <motion.div
-                      key="text"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      transition={{ duration: 0.2 }}
-                      className="flex flex-col items-center justify-center py-12 space-y-5"
-                    >
-                      <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-                        <Send size={28} className="text-emerald-500" />
-                      </div>
-                      <div className="text-center space-y-2">
-                        <h3 className="text-white font-medium text-lg">Coming Soon</h3>
-                        <p className="text-sm text-white/30 max-w-xs">
-                          Fake news detection powered by advanced AI semantic analysis is currently under development.
-                        </p>
-                      </div>
-                      <span className="text-[9px] uppercase tracking-[0.3em] text-emerald-500/60 px-4 py-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/5">
-                        In Development
-                      </span>
-                    </motion.div>
                   )}
                 </AnimatePresence>
               </div>
@@ -441,7 +444,6 @@ export default function LandingPage() {
           </GlassEffect>
         </div>
 
-        {/* ── Stats row ── */}
         <div className="pt-14 md:pt-16 grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 w-full max-w-4xl">
           {[
             { label: 'Total Users', value: '128K+' },
@@ -449,26 +451,16 @@ export default function LandingPage() {
             { label: 'Accuracy', value: '99.8%' },
             { label: 'Latency', value: '< 2.5s' },
           ].map((stat, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 + i * 0.08, duration: 0.4 }}
-              className="text-center space-y-1.5"
-            >
+            <motion.div key={i} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 + i * 0.08, duration: 0.4 }} className="text-center space-y-1.5">
               <p className="text-3xl md:text-4xl font-medium tracking-tighter text-white">{stat.value}</p>
               <p className="text-[10px] uppercase tracking-[0.2em] text-white/20">{stat.label}</p>
             </motion.div>
           ))}
         </div>
 
-        {/* ── Neural Core showcase card ── */}
         <div className="pt-20 md:pt-24 w-full max-w-5xl">
           <Card className="w-full h-auto md:h-[500px] bg-white/[0.02] border-white/10 relative overflow-hidden rounded-3xl group shadow-2xl">
-            <Spotlight
-              className="from-emerald-500/20 via-emerald-500/5 to-transparent"
-              size={600}
-            />
+            <Spotlight className="from-emerald-500/20 via-emerald-500/5 to-transparent" size={600} />
             <div className="flex h-full flex-col md:flex-row">
               <div className="flex-1 p-8 md:p-12 relative z-10 flex flex-col justify-center text-left space-y-5">
                 <div className="space-y-2">
@@ -484,34 +476,20 @@ export default function LandingPage() {
                   invisible to the human eye.
                 </p>
                 <div className="pt-4">
-                  {/* FIX: clean button — no GlassButton wrapper confusion, border clips correctly */}
-                  <button
-                    onClick={() => window.open('https://github.com/SentinelAIbyCodeNewbies', '_blank', 'noopener,noreferrer')}
-                    className="inline-flex items-center px-8 py-3 rounded-xl overflow-hidden
-                               bg-white/[0.03] border border-white/10
-                               hover:border-emerald-500/50 hover:bg-white/[0.06]
-                               text-[10px] uppercase tracking-widest text-white/60
-                               transition-all duration-200"
-                  >
+                  <button onClick={() => window.open('https://github.com/SentinelAIbyCodeNewbies', '_blank', 'noopener,noreferrer')} className="inline-flex items-center px-8 py-3 rounded-xl overflow-hidden bg-white/[0.03] border border-white/10 hover:border-emerald-500/50 hover:bg-white/[0.06] text-[10px] uppercase tracking-widest text-white/60 transition-all duration-200">
                     Explore Documentation
                   </button>
                 </div>
               </div>
               <div className="flex-1 relative min-h-[280px] md:min-h-0 h-full border-t md:border-t-0 md:border-l border-white/5">
                 <div className="absolute inset-0 bg-gradient-to-l from-black/40 to-transparent z-10 pointer-events-none" />
-                <SplineScene
-                  scene="https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode"
-                  className="w-full h-full"
-                />
+                <SplineScene scene="https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode" className="w-full h-full" />
               </div>
             </div>
           </Card>
         </div>
 
-        {/* ── Contact + Feedback cards ── */}
         <div className="pt-20 md:pt-24 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 pb-16 md:pb-20 w-full max-w-5xl">
-
-          {/* Contact card */}
           <GlassEffect className="p-8 rounded-3xl border border-white/5 flex flex-col h-full group">
             <div className="flex flex-col items-center justify-center text-center flex-1 space-y-6">
               <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 group-hover:scale-110 transition-transform duration-500">
@@ -523,21 +501,12 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="pt-8 mt-auto w-full">
-              {/* FIX: direct button — bg clips inside rounded-xl because overflow-hidden is on the button itself */}
-              <button
-                onClick={() => { window.location.href = 'mailto:supportatsentinelai@gmail.com'; }}
-                className="w-full py-3 rounded-xl overflow-hidden
-                           bg-white/[0.03] border border-white/10
-                           hover:bg-emerald-500/10 hover:border-emerald-500/50
-                           text-[10px] uppercase tracking-widest text-white/60 hover:text-emerald-400
-                           transition-all duration-300"
-              >
+              <button onClick={() => { window.location.href = 'mailto:supportatsentinelai@gmail.com'; }} className="w-full py-3 rounded-xl overflow-hidden bg-white/[0.03] border border-white/10 hover:bg-emerald-500/10 hover:border-emerald-500/50 text-[10px] uppercase tracking-widest text-white/60 hover:text-emerald-400 transition-all duration-300">
                 Send Email
               </button>
             </div>
           </GlassEffect>
 
-          {/* Feedback card */}
           <GlassEffect className="p-8 rounded-3xl border border-white/5 flex flex-col h-full text-left">
             <div className="flex items-center gap-4 mb-8">
               <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 shrink-0">
@@ -545,32 +514,18 @@ export default function LandingPage() {
               </div>
               <h3 className="text-xl font-medium text-white">Give Your Feedback</h3>
             </div>
-
-            {/* NOTE: kept as regular div+button to avoid nested <form> issues */}
             <div className="flex flex-col flex-1">
               <div className="flex justify-between items-end ml-1 mb-2">
                 <label className="text-[10px] uppercase tracking-widest text-white/20">Message</label>
                 {storeUser?.email && (
                   <span className="text-[9px] uppercase tracking-widest text-white/20">
-                    Sending as:{' '}
-                    <span className="text-emerald-500/60 lowercase tracking-normal">{storeUser.email}</span>
+                    Sending as: <span className="text-emerald-500/60 lowercase tracking-normal">{storeUser.email}</span>
                   </span>
                 )}
               </div>
-              <textarea
-                placeholder="How can we improve?"
-                rows={5}
-                className="w-full bg-white/[0.02] border border-white/5 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/10 focus:outline-none focus:border-emerald-500/30 transition-colors duration-200 resize-none mb-6"
-              />
+              <textarea placeholder="How can we improve?" rows={5} className="w-full bg-white/[0.02] border border-white/5 rounded-xl px-4 py-3 text-sm text-white placeholder:text-white/10 focus:outline-none focus:border-emerald-500/30 transition-colors duration-200 resize-none mb-6" />
               <div className="mt-auto w-full">
-                {/* FIX: self-contained button — overflow-hidden + rounded-xl keeps hover bg clipped */}
-                <button
-                  className="w-full py-3 rounded-xl overflow-hidden
-                             bg-emerald-500/10 border border-emerald-500/20
-                             hover:bg-emerald-500 hover:border-emerald-500
-                             text-[10px] uppercase tracking-widest text-emerald-500 hover:text-white
-                             transition-all duration-300"
-                >
+                <button className="w-full py-3 rounded-xl overflow-hidden bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500 hover:border-emerald-500 text-[10px] uppercase tracking-widest text-emerald-500 hover:text-white transition-all duration-300">
                   Submit Feedback
                 </button>
               </div>
@@ -579,34 +534,18 @@ export default function LandingPage() {
         </div>
       </motion.div>
 
-      {/* ── Global loading overlay ── */}
       <AnimatePresence>
         {isLoading && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-40 backdrop-blur-md bg-black/60 flex flex-col items-center justify-center gap-6"
-          >
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="fixed inset-0 z-40 backdrop-blur-md bg-black/60 flex flex-col items-center justify-center gap-6">
             <div className="relative w-16 h-16">
               <div className="absolute inset-0 border-2 border-emerald-500/20 rounded-full" />
-              <motion.div
-                className="absolute inset-0 border-2 border-emerald-500 border-t-transparent rounded-full"
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-              />
+              <motion.div className="absolute inset-0 border-2 border-emerald-500 border-t-transparent rounded-full" animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }} />
             </div>
             <div className="text-center space-y-2">
               <p className="text-sm font-medium text-white tracking-wide">{loadingMessage}</p>
               <div className="flex gap-1 justify-center">
                 {[0, 1, 2].map((i) => (
-                  <motion.div
-                    key={i}
-                    className="w-1 h-1 bg-emerald-500 rounded-full"
-                    animate={{ opacity: [0.2, 1, 0.2] }}
-                    transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
-                  />
+                  <motion.div key={i} className="w-1 h-1 bg-emerald-500 rounded-full" animate={{ opacity: [0.2, 1, 0.2] }} transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }} />
                 ))}
               </div>
             </div>

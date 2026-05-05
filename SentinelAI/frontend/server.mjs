@@ -6,7 +6,7 @@ import path from "path";
 const PORT = Number(process.env.PORT || 3000);
 
 // Pull the AWS IP from the .env file safely
-const BACKEND_URL = (process.env.VITE_BACKEND_PROXY_TARGET || "http://127.0.0.1:8000").replace(/\/+$/, '');
+const BACKEND_URL = (process.env.VITE_BACKEND_PROXY_TARGET || "http://127.0.0.1:8080").replace(/\/+$/, '');
 
 async function startServer() {
   const app = express();
