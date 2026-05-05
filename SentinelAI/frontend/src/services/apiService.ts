@@ -1,3 +1,4 @@
+import { timeStamp } from 'console';
 import { buildApiUrl } from '../lib/api-base';
 /**
  * SentinelAI API Service
@@ -222,8 +223,8 @@ export const apiService = {
    * Pathway C: Text Analysis (Fake News Detection)
    * Uses FastAPI `/verify_news` (alias: `/analyze_news`)
    */
-  analyzeText: async (text: string): Promise<AnalysisResult> => {
-    const response = await fetch(buildApiUrl('/verify_news'), {
+  analyzeText: async (text: string) => {
+    const response = await fetch(buildApiUrl('/factcheck'), {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
@@ -233,25 +234,21 @@ export const apiService = {
     });
 
     if (!response.ok) {
-      const detail = await response.text().catch(() => '');
-      throw new Error(`News analysis failed: ${response.statusText}${detail ? ` - ${detail}` : ''}`);
+      const errorData = await response.json().catch(() => ({}));
+      const detail = errorData.detail || response.statusText;
+      throw new Error(`Headline analysis failed: ${detail} `); 
     }
 
     const data: any = await response.json();
-    const newsVerdict = typeof data?.verdict === 'string' ? data.verdict : '';
-    const verdictRaw = newsVerdict.toLowerCase();
-    const verdict: AnalysisResult['verdict'] =
-      verdictRaw.includes('fake') ? 'Fake' : verdictRaw.includes('real') ? 'Real' : 'Real';
 
     return {
-      verdict,
-      newsVerdict,
       confidence: typeof data?.confidence === 'number' ? data.confidence : Number(data?.confidence ?? 0),
       reasoning: typeof data?.reasoning === 'string' ? data.reasoning : '',
       claim: typeof data?.claim === 'string' ? data.claim : undefined,
       evidence: Array.isArray(data?.evidence) ? data.evidence : undefined,
       timestamp: new Date().toISOString(),
       raw: data,
+      timeStamp: new Date().toISOString()
     };
   },
 
